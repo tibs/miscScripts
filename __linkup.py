@@ -15,8 +15,9 @@ def linkup():
     parent_dir = os.path.split(this_dir)[0]
 
     files = os.listdir(this_dir)
+    files.sort()
     for name in files:
-        if name in (this_file, "readme.txt"):
+        if name in (this_file, 'readme.txt'):
             print 'Ignoring', name
             continue
 
@@ -24,13 +25,26 @@ def linkup():
             print 'Ignoring', name
             continue
 
+        full_path = os.path.join(this_dir, name)
+        if os.path.isdir(full_path):
+            print 'Ignoring', name
+            continue
+
         base, ext = os.path.splitext(name)
-        print 'Linking %s as ../%s'%(name, base)
+
+        if ext in ('.swp', '.swo'):
+            print 'Ignoring', name
+            continue
+
         try:
-            os.symlink(os.path.join(this_dir, name),
+            os.symlink(full_path,
                        os.path.join(parent_dir, base))
+            print 'Linked %s as ../%s'%(name, base)
         except OSError as e:
-            print '..', e
+            if e.errno == 17:
+                print 'Entry already exists for',base
+            else:
+                print e, base
 
 if __name__ == '__main__':
     args = sys.argv[1:]
