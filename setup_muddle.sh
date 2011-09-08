@@ -10,12 +10,16 @@
 
 # This is normally a soft link to ~/sw/muddle.svn/trunk/muddle
 MY_MUDDLE_DIR=${HOME}/sw/muddle
+MY_M3_DIR=${HOME}/sw/m3
 
+# This is a reference to the "normal" version of muddle. I expect this to
+# always be set to the master branch
 alias muddle="python ${MY_MUDDLE_DIR}/muddled/"
-# m3 is my experimental version of muddle...
-#alias m3='python /home/tibs/sw/muddle.svn/branches/new_vcs/muddle/muddled/'
-# But sometimes it is just another name for the mainstream...
-alias m3="python ${MY_MUDDLE_DIR}/muddled/"
 
+# m3 is my experimental version of muddle...
+# It may be set to master, or to any other branch
+alias m3="python ${MY_M3}/muddled/"
+
+# visdep get to use the safe muddle...
 alias visdep="${MY_MUDDLE_DIR}/sandbox/visdep.py"
 
