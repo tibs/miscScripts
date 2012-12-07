@@ -1,18 +1,24 @@
 #! /usr/bin/env python
 
-"""Make links in the directory above this one.
+"""Make links to these programs from ${HOME}/bin
 
 Find all of the Python scripts in this directory (except this one), and make
-soft links to them in the directory above, but without the trailing '.py'
+soft links to them, but without the trailing '.py'
 """
 
 import sys
 import os
 
 def linkup():
+    home = os.path.expandvars("${HOME}")
+
+    bindir = os.path.join(home, "bin")
+    if not os.path.exists(bindir):
+        print 'Creating', bindir
+        os.mkdir(bindir)
+
     this_dir, this_file = os.path.split(__file__)
     this_dir = os.path.abspath(this_dir)
-    parent_dir = os.path.split(this_dir)[0]
 
     files = os.listdir(this_dir)
     files.sort()
@@ -22,11 +28,6 @@ def linkup():
             continue
 
         if name[-1] in ('~', '#'):
-            print 'Ignoring', name
-            continue
-
-        full_path = os.path.join(this_dir, name)
-        if os.path.isdir(full_path):
             print 'Ignoring', name
             continue
 
@@ -41,13 +42,19 @@ def linkup():
         else:
             usename = name
 
+        this = os.path.join(this_dir, name)
+        that = os.path.join(bindir, usename)
+
+        if os.path.isdir(this):
+            print 'Ignoring directory', name
+            continue
+
         try:
-            os.symlink(full_path,
-                       os.path.join(parent_dir, usename))
-            print 'Linked %s as ../%s'%(name, usename)
+            os.symlink(this, that)
+            print 'Linked %s to %s'%(that, this)
         except OSError as e:
             if e.errno == 17:
-                print 'Entry already exists for',base
+                print 'Entry already exists for',usename
             else:
                 print e, base
 
