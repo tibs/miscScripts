@@ -2,7 +2,7 @@
 
 """Simple utility to make some attempt at turning HTML into text
 
-	usage: html2text [<switches>] htmlfile [textfile]
+	usage: html2text [<switches>] htmlfile
 	       html2text [<switches>] -all [directory [directory ...]]
 	       html2text -auto [directory [directory ...]]
 
@@ -13,9 +13,10 @@ Switches:
    -force    the output file will overwrite any existing file of that name.
    -delete   the HTML file will be deleted if it is successfully translated.
    -auto     the same as "-all -verbose -delete".
+   -compress, -gzip, -z   compress the result with gzip
+   -recurse,  -r          recurse through directories, implies -all
 
-If no `textfile` is given, a file of the same name as the `htmlfile` but with
-extension ".txt" will be created.
+NB: .doc and .rtf files are also converted, but will not be deleted.
 """
 
 import sys
@@ -202,8 +203,8 @@ class MyWriter(formatter.NullWriter):
 	self.atbreak = 0
 
 
-def convert(htmlfile,textfile,force=0,verbose=0,problems=None,
-            delete=0):
+def textutil(docfile,textfile,force=0,verbose=0,problems=None,
+             delete=0,compress=0):
     """Do the conversion."""
 
     if os.path.exists(textfile) and not force:
@@ -211,12 +212,62 @@ def convert(htmlfile,textfile,force=0,verbose=0,problems=None,
 	return
 
     if verbose:
-        print "Reading",htmlfile
-        print "Writing",textfile
+	print "%-40s:"%docfile,
+
+    err = os.system("textutil -convert txt -output '%s' '%s'"%(textfile,docfile))
+
+    if compress:
+	if verbose: print "Compressing.. ",
+        if force:
+            os.system("gzip -f '%s'"%textfile)
+        else:
+            os.system("gzip '%s'"%textfile)
+
+    if verbose: print
+
+
+
+def antiword(docfile,textfile,force=0,verbose=0,problems=None,
+             delete=0,compress=0):
+    """Do the conversion."""
+
+    if os.path.exists(textfile) and not force:
+	print "Can't write %s - it already exists"%textfile
+	return
+
+    if verbose:
+	print "%-40s:"%docfile,
+
+    err = os.system("antiword -f '%s' > '%s'"%(docfile,textfile))
+
+    if compress:
+	if verbose: print "Compressing.. ",
+        if force:
+            os.system("gzip -f '%s'"%textfile)
+        else:
+            os.system("gzip '%s'"%textfile)
+
+    if verbose: print
+
+
+
+def convert(htmlfile,textfile,force=0,verbose=0,problems=None,
+            delete=0,compress=0):
+    """Do the conversion."""
+
+    if os.path.exists(textfile) and not force:
+	print "Can't write %s - it already exists"%textfile
+	return
+
+    if verbose:
+	print "%-40s:"%htmlfile,
 
     ff = open(htmlfile,"r")
     data = ff.read()
     ff.close()
+
+    if verbose:
+	print "Writing.. ",
 
     ww = open(textfile,"w")
     fmtr = formatter.AbstractFormatter(MyWriter(ww))
@@ -230,20 +281,85 @@ def convert(htmlfile,textfile,force=0,verbose=0,problems=None,
             p.close()
         if delete:
             if verbose:
-                print "Deleting",htmlfile
+                print "Deleting.. ",
             os.remove(htmlfile)
     except KeyboardInterrupt:
         raise KeyboardInterrupt
     except:
+	if verbose: print
         print "Exception processing %s - %s: %s"%(textfile,sys.exc_type,
                                                   sys.exc_value)
-        print "   Trying linksdump instead"
         if problems != None:
             problems.append(htmlfile)
         if os.path.exists(textfile):
             os.remove(textfile)
-        import linksdump
-        linksdump.convert(htmlfile,textfile)
+
+        print "Trying textutil instead"
+        os.system("textutil -convert txt -output '%s' '%s'"%(textfile,htmlfile))
+
+    if compress:
+	if verbose: print "Compressing.. ",
+        if force:
+            os.system("gzip -f '%s'"%textfile)
+        else:
+            os.system("gzip '%s'"%textfile)
+
+    if verbose: print
+
+def unquotify(directory,file):
+    if "'" in file:
+        print "Removing single quotes from file %s"%os.path.join(directory,file)
+        newfile = ""
+        # Ick -- don't do it this way!
+        for letter in file:
+            if letter == "'":
+                newfile += "_"
+            else:
+                newfile += letter
+        os.rename(os.path.join(directory,file),
+                  os.path.join(directory,newfile))
+        file = newfile
+    return file
+
+def convert_file(directory,file,force=0,verbose=0,problems=None,delete=0,recurse=0,compress=0):
+
+    name,ext = os.path.splitext(file)
+    ext = string.lower(ext)
+    if ext in (".html", ".shtml", ".htm"):
+        file = unquotify(directory,file)
+        textfile = deduce_filename(file)
+        convert(os.path.join(directory,file),
+                os.path.join(directory,textfile),force=force,
+                verbose=verbose,problems=problems,delete=delete,compress=compress)
+    elif ext == ".doc":
+        file = unquotify(directory,file)
+        textfile = file + ".txt"
+        antiword(os.path.join(directory,file),
+                 os.path.join(directory,textfile),force=force,
+                 verbose=verbose,problems=problems,delete=delete,compress=compress)
+    elif ext == ".rtf":
+        file = unquotify(directory,file)
+        textfile = file + ".txt"
+        textutil(os.path.join(directory,file),
+                 os.path.join(directory,textfile),force=force,
+                 verbose=verbose,problems=problems,delete=delete,compress=compress)
+
+
+def process_dir(directory,force=0,verbose=0,problems=None,delete=0,recurse=0,compress=0):
+    if not verbose: print "Directory",directory
+    files = os.listdir(directory)
+    files.sort()
+    for file in files:
+	path = os.path.join(directory,file)
+	if os.path.isdir(path):
+	    if recurse:
+		process_dir(path,force=force,verbose=verbose,problems=problems,
+				delete=delete,recurse=recurse,compress=compress)
+	else:
+            convert_file(directory,file,
+                         force=force,verbose=verbose,problems=problems,
+                         delete=delete,recurse=recurse,compress=compress)
+
 
 
 def main():
@@ -254,6 +370,8 @@ def main():
     debug = 0
     verbose = 0
     delete = 0
+    recurse = 0
+    compress = 0
     args  = []
 
     # What arguments do we have?
@@ -273,6 +391,11 @@ def main():
 	    debug = 1
 	elif word == "-force":
 	    force = 1
+        elif word in ("-recurse","-r"):
+	    recurse = 1
+	    all = 1
+        elif word in ("-compress", "-gzip", "-z"):
+	    compress = 1
 	elif word == "-verbose":
 	    verbose = 1
 	elif word == "-delete":
@@ -299,34 +422,21 @@ def main():
 	    args.append(".")
 	for dir in args:
 	    if not os.path.isdir(dir): continue
-	    print "Directory",dir
-	    files = os.listdir(dir)
-            files.sort()
-	    for file in files:
-		name,ext = os.path.splitext(file)
-		ext = string.lower(ext)
-		if ext in (".html", ".shtml", ".htm"):
-		    textfile = deduce_filename(file)
-		    convert(os.path.join(dir,file),
-			    os.path.join(dir,textfile),force=force,
-                            verbose=verbose,problems=problems,delete=delete)
+            process_dir(dir,force=force,verbose=verbose,problems=problems,delete=delete,recurse=recurse,
+			    compress=compress)
         if problems:
             print "Problems were encountered with:"
             for name in problems:
                 print "  ",name
     else:
 	if len(args) == 1:
-	    htmlfile = args[0]
-	    textfile = deduce_filename(htmlfile)
-	elif len(args) == 2:
-	    htmlfile = args[0]
-	    textfile = args[1]
+            directory,file = os.path.split(args[0])
+            convert_file(directory,file,
+                         force=force,verbose=verbose,problems=problems,
+                         delete=delete,recurse=recurse,compress=compress)
 	else:
 	    print __doc__
 	    return
-
-	convert(htmlfile,textfile,force=force,verbose=verbose)
-
 
 # If we're run from the shell, run ourselves
 
