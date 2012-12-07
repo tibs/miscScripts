@@ -17,7 +17,7 @@ def linkup():
     files = os.listdir(this_dir)
     files.sort()
     for name in files:
-        if name in (this_file, 'readme.txt'):
+        if name in (this_file, 'readme.rst'):
             print 'Ignoring', name
             continue
 
@@ -36,10 +36,15 @@ def linkup():
             print 'Ignoring', name
             continue
 
+        if ext == ".py":
+            usename = base
+        else:
+            usename = name
+
         try:
             os.symlink(full_path,
-                       os.path.join(parent_dir, base))
-            print 'Linked %s as ../%s'%(name, base)
+                       os.path.join(parent_dir, usename))
+            print 'Linked %s as ../%s'%(name, usename)
         except OSError as e:
             if e.errno == 17:
                 print 'Entry already exists for',base
