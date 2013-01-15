@@ -2,9 +2,9 @@ Useful scripts
 ==============
 A collection of scripts of varying utility.
 
-``__linkup.py`` Run this in the directory above this one, to make links from
-all the scripts in this directory (excepting itself) in the parent directory.
-The links omit the extension, which works well on Unices.  ``-h`` for help.
+``__linkup.py`` Run this to make links from ${HOME}/bin to all the scripts in
+this directory.  The links omit the extension, which works well on Unices.
+``-h`` for help.
 
 ``change_extension.py`` An old script which does what it says.  ``-h`` for
 help.
