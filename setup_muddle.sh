@@ -22,4 +22,5 @@ alias m3="python ${MY_M3_DIR}/muddled/"
 
 # visdep get to use the safe muddle...
 alias visdep="${MY_MUDDLE_DIR}/sandbox/visdep.py"
+alias v3dep="${MY_M3_DIR}/sandbox/visdep.py"
 
