@@ -9,7 +9,7 @@ Usage:
 If "-v" is given, announcements will be given for each directory checked.
 If "-p" is given, then no files will actually be deleted.
 
-If "-swp" is given, ".swp" files will also be deleted.
+If "-swp" is given, ".swp" and ".swo" files will also be deleted.
 If "-dep" is given, ".depend" files will also be deleted.
 If "-all" is given, then all the above extra files to delete are deleted.
 
@@ -38,7 +38,7 @@ def process(dir,pretend=0,remove_swp=0,remove_dep=0,remove_tag=0,verbose=1):
                 process(what,pretend,remove_swp,remove_dep,verbose)
         else:
             if name[-1] == "~" or \
-               (remove_swp and name[-4:] == ".swp") or \
+               (remove_swp and name[-4:] in (".swp", ".swo")) or \
                (remove_dep and name == ".depend") or \
                (remove_tag and name == "tags"):
                 if pretend:
