@@ -24,10 +24,8 @@ def filestr(path, filename, fold_dirs=None):
     We could work the latter out from the former, but our caller already
     knew both, so this is hopefully slightly faster.
     """
-    s = os.stat(path)
-    m = s.st_mode
     flags = []
-    if stat.S_ISLNK(m):
+    if os.path.islink(path):
         # This is *not* going to show the identical linked path as
         # (for instance) 'ls' or 'tree', but it should be simply
         # comparable to another DirTree link
@@ -40,12 +38,15 @@ def filestr(path, filename, fold_dirs=None):
             flags.append('/')
             # We don't try to cope with a "far" executable, or if it's
             # another link (does it work like that?)
-    elif stat.S_ISDIR(m):
+    elif os.path.isdir(path):
         flags.append('/')
         if fold_dirs and filename in fold_dirs:
             flags.append('...')
-    elif (m & stat.S_IXUSR) or (m & stat.S_IXGRP) or (m & stat.S_IXOTH):
-        flags.append('*')
+    else:
+        s = os.stat(path)
+        m = s.st_mode
+        if (m & stat.S_IXUSR) or (m & stat.S_IXGRP) or (m & stat.S_IXOTH):
+            flags.append('*')
     return '%s%s'%(filename, ''.join(flags))
 
 if False:
