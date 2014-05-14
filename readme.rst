@@ -48,4 +48,9 @@ help.
 ``tidypath.py`` Return a new string representing a PATH without duplicates.
 ``-h`` for help.
 
+``tree.py`` A very simple version of the Linux "tree" utility, written to
+allow me to "fold" directories whose content is not of interest. So ``tree.py
+-f .git`` will show a ``.git`` directory as present, but not show its
+contents. Again, ``-h`` for help.
+
 .. vim: set filetype=rst tabstop=8 softtabstop=2 shiftwidth=2 expandtab:

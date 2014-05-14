@@ -1,9 +1,13 @@
 #! /usr/bin/env python
 # -*- coding: latin-1 -*-
 
-"""Usage: tree.py [-s <dir>] [<directory>]
+"""Usage: tree.py [-f[old] <dir>] [<directory>]
 
-Directories named by '-s' will not have their content shown
+Directories named by '-fold' ('-f') will not have their content shown
+You may nominate multiple "folded" directories, but each needs to be
+preceded by the switch. For instance::
+
+    tree.py -f .git -f .weld fromble
 """
 
 import sys
@@ -96,7 +100,7 @@ def main(args):
         if word in ('-h', '-help', '--help'):
             print __doc__
             return
-        elif word == '-s':
+        elif word in ('-f', '-fold'):
             fold_dirs.append(args.pop(0))
         elif where is None:
             where = word
