@@ -23,6 +23,7 @@ Note: does not follow or remove links. Also, does not look inside ".bzr",
 import sys
 import string
 import os
+import errno
 
 def process(dir,pretend=0,remove_swp=0,remove_dep=0,remove_tag=0,verbose=1):
     if verbose:
@@ -45,7 +46,13 @@ def process(dir,pretend=0,remove_swp=0,remove_dep=0,remove_tag=0,verbose=1):
                     print "  'Deleting'",what
                 else:
                     print "  Deleting",what
-                    os.remove(what)
+                    try:
+                        os.remove(what)
+                    except OSError as e:
+                        if e.errno == errno.EBUSY:
+                            print "  ...which is in use (EBUSY), so not deleting it"
+                        else:
+                            raise
 
 def main():
     pretend = 0
