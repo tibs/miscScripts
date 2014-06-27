@@ -1,13 +1,17 @@
 #! /usr/bin/env python
 # -*- coding: latin-1 -*-
 
-"""Usage: tree.py [-f[old] <dir>] [<directory>]
+"""Usage: tree.py [-f[old] <dir>] [-a[scii]] [<directory>]
 
 Directories named by '-fold' ('-f') will not have their content shown
 You may nominate multiple "folded" directories, but each needs to be
 preceded by the switch. For instance::
 
     tree.py -f .git -f .weld fromble
+
+If you specify '-ascii' ('-a') then "normal" characters will be used to show
+the tree structure, instead of IBM437 characters (this is similar to the "real"
+tree's '--charset=ASCII')
 """
 
 import sys
@@ -53,18 +57,25 @@ def filestr(path, filename, fold_dirs=None):
             flags.append('*')
     return '%s%s'%(filename, ''.join(flags))
 
-if False:
-    T = '+-'
-    L = '+-'
-    B = '| '
-    S = '  '
-else:
-    T = '├─'
-    L = '└─'
-    B = '│ '
-    S = '  '
+def tree(dirpath, padding='', fold_dirs=None, just_ascii=False):
 
-def tree(dirpath, padding='', fold_dirs=None):
+    if just_ascii:
+        if True:            # Follow how Unix 'tree' does it
+            T = '|- '
+            L = '`- '
+            B = '|  '
+            S = '   '
+        else:               # A heavier-weight alternative
+            T = '+-'
+            L = '+-'
+            B = '| '
+            S = '  '
+    else:
+        T = '├─'
+        L = '└─'
+        B = '│ '
+        S = '  '
+
     filenames = sorted(os.listdir(dirpath))
     for count, name in enumerate(filenames):
         path = os.path.join(dirpath, name)
@@ -82,7 +93,7 @@ def tree(dirpath, padding='', fold_dirs=None):
                 new_padding = padding + S
             else:
                 new_padding = padding + B
-            tree(path, new_padding, fold_dirs=fold_dirs)
+            tree(path, new_padding, fold_dirs=fold_dirs, just_ascii=just_ascii)
         else:
             if count+1 == len(filenames):
                 new_padding = padding + L
@@ -93,6 +104,7 @@ def tree(dirpath, padding='', fold_dirs=None):
 def main(args):
 
     where = None
+    just_ascii = False
     fold_dirs = []
 
     while args:
@@ -102,6 +114,8 @@ def main(args):
             return
         elif word in ('-f', '-fold'):
             fold_dirs.append(args.pop(0))
+        elif word in ('-a', '-ascii'):
+            just_ascii = True
         elif where is None:
             where = word
         else:
@@ -112,7 +126,7 @@ def main(args):
 
     path = os.path.abspath(where)
     print filestr(path, os.path.basename(path))
-    tree(path, fold_dirs=fold_dirs)
+    tree(path, fold_dirs=fold_dirs, just_ascii=just_ascii)
 
 if __name__ == '__main__':
     args = sys.argv[1:]
