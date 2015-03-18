@@ -29,6 +29,10 @@ converts to/from National Grid references.  No help. Read its docstring.
 ``onpath.py`` Sort of a home-grown version of 'which', but with regular
 expressions.  No help. Read its docstring.
 
+``unrpm.py`` Runs ``rmp2cpio`` and ``cpio`` to extract the contents from an
+RPM file (who'd have thought the RPM command didn't support that!). ``-h`` for
+help.
+
 ``remove_links.py`` Remove links in a directory. Not sure why I wanted this.
 No help - just runs. Which is nasty of it.
 
