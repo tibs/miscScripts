@@ -37,7 +37,8 @@ help.
 No help - just runs. Which is nasty of it.
 
 ``remove_twiddle_files.py`` Find and delete files ending with "~", and other
-files of the sort that get left lying around.  ``-h`` for help.
+files of the sort that get left lying around (with an option to remove
+``.pyc`` files as well).  ``-h`` for help.
 
 ``rundoctest.py`` A simple script to run doctest.py over a file.  ``-h`` for
 help.
@@ -47,7 +48,7 @@ muddle. So it may be of no interest to anyone else.
 
 ``showpath.py`` Show the PATH, or the PYTHONPATH, or various other paths, in a
 useful manner, reporting on duplicates. Works on Windows as well.  ``-h`` for
-help.  
+help.
 
 ``tidypath.py`` Return a new string representing a PATH without duplicates.
 ``-h`` for help.
