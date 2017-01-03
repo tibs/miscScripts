@@ -29,11 +29,16 @@ converts to/from National Grid references.  No help. Read its docstring.
 ``onpath.py`` Sort of a home-grown version of 'which', but with regular
 expressions.  No help. Read its docstring.
 
+``unrpm.py`` Runs ``rmp2cpio`` and ``cpio`` to extract the contents from an
+RPM file (who'd have thought the RPM command didn't support that!). ``-h`` for
+help.
+
 ``remove_links.py`` Remove links in a directory. Not sure why I wanted this.
 No help - just runs. Which is nasty of it.
 
 ``remove_twiddle_files.py`` Find and delete files ending with "~", and other
-files of the sort that get left lying around.  ``-h`` for help.
+files of the sort that get left lying around (with an option to remove
+``.pyc`` files as well).  ``-h`` for help.
 
 ``rundoctest.py`` A simple script to run doctest.py over a file.  ``-h`` for
 help.
@@ -43,7 +48,7 @@ muddle. So it may be of no interest to anyone else.
 
 ``showpath.py`` Show the PATH, or the PYTHONPATH, or various other paths, in a
 useful manner, reporting on duplicates. Works on Windows as well.  ``-h`` for
-help.  
+help.
 
 ``tidypath.py`` Return a new string representing a PATH without duplicates.
 ``-h`` for help.
@@ -51,6 +56,7 @@ help.
 ``tree.py`` A very simple version of the Linux "tree" utility, written to
 allow me to "fold" directories whose content is not of interest. So ``tree.py
 -f .git`` will show a ``.git`` directory as present, but not show its
-contents. Again, ``-h`` for help.
+contents. The ``-a`` switch is useful to output a simple ASCII version of the
+tree structure. Again, ``-h`` for help.
 
 .. vim: set filetype=rst tabstop=8 softtabstop=2 shiftwidth=2 expandtab:
