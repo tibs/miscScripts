@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """Report on Unix error numbers, and also (if appropriate) what the error means
 in KBUS.
@@ -49,8 +49,10 @@ import textwrap
 import errno
 from errno import errorcode
 
+
 def __(text):
     return textwrap.dedent(text)
+
 
 kbus_codes = {
         # Things cut-and-pasted (and mildly mangled) from the KBUS documentation
@@ -170,15 +172,17 @@ kbus_codes = {
             """),
     }
 
+
 def check_kbus(errname):
     if errname in kbus_codes:
-        print
-        print 'KBUS: %s'%errname
-        print kbus_codes[errname]
+        print()
+        print('KBUS: %s' % errname)
+        print(kbus_codes[errname])
+
 
 def main(args):
     if len(args) == 0:
-        print __doc__
+        printr(__doc__)
         return
 
     want_kbus = False
@@ -190,10 +194,10 @@ def main(args):
 
         if thing == '-list':
             for key, value in errorcode.items():
-                print '%3d: %-20s %s'%(key, value, os.strerror(key))
+                print('%3d: %-20s %s' % (key, value, os.strerror(key)))
             return
         elif thing in ('-h', '-help', '--help', 'help'):
-            print __doc__
+            print(__doc__)
             return
         elif thing in ('-k', '-kbus'):
             want_kbus = True
@@ -207,21 +211,21 @@ def main(args):
                 # It was probably a negative error number
                 # - we can be friendly and convert it for the user
                 guess = -errnum
-                print 'Assuming %d means %d'%(errnum, guess)
+                print('Assuming %d means %d' % (errnum, guess))
                 errnum = guess
             elif 0xffffffff >= errnum > 0xffff0000:
                 # It was probably a negative error number as a 32-bit quantity
                 # - we can be friendly and convert it for the user
                 guess = 0x100000000 - errnum
-                print 'Assuming %#0x means -%d'%(errnum, guess)
+                print('Assuming %#0x means -%d' % (errnum, guess))
                 errnum = guess
-            print 'Error %d (0x%x) is %s: %s'%(errnum, errnum,
-                                               errorcode[errnum], os.strerror(errnum))
+            print('Error %d (0x%x) is %s: %s' % (errnum, errnum,
+                                                 errorcode[errnum], os.strerror(errnum)))
             if want_kbus:
                 check_kbus(errorcode[errnum])
             continue
         except KeyError:
-            print 'Unrecognised error code number %d'%errnum
+            print('Unrecognised error code number %d' % errnum)
             continue
         except ValueError:
             # It wasn't a plausible number - fall through
@@ -233,12 +237,13 @@ def main(args):
 
         if thing in reverse:
             errnum = reverse[thing]
-            print '%s is error %d (0x%x): %s'%(thing, errnum, errnum, os.strerror(errnum))
+            print('%s is error %d (0x%x): %s' % (thing, errnum, errnum, os.strerror(errnum)))
         else:
-            print 'Unrecognised error code mnemonic %s'%thing
+            print('Unrecognised error code mnemonic %s' % thing)
 
         if want_kbus:
             check_kbus(thing)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
