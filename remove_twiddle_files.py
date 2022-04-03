@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Find and delete all files ending in "~" (i.e., [X]Emacs and vim backup
 files) in the given directory (directories) and its (their) subdirectories.
@@ -38,7 +38,7 @@ class Remove(object):
 
 def process(dirname, remove, pretend=False, verbose=True):
     if verbose:
-        print "Processing %s"%dirname
+        print("Processing %s"%dirname)
     files = os.listdir(dirname)
     files.sort()
     for name in files:
@@ -55,14 +55,14 @@ def process(dirname, remove, pretend=False, verbose=True):
                (remove.tag and name == "tags") or \
                (remove.pyc and name.endswith(".pyc")):
                 if pretend:
-                    print "  'Deleting'",what
+                    print("  'Deleting'",what)
                 else:
-                    print "  Deleting",what
+                    print("  Deleting",what)
                     try:
                         os.remove(what)
                     except OSError as e:
                         if e.errno == errno.EBUSY:
-                            print "  ...which is in use (EBUSY), so not deleting it"
+                            print("  ...which is in use (EBUSY), so not deleting it")
                         else:
                             raise
 
@@ -73,17 +73,17 @@ def main():
     directories = []
     arg_list = sys.argv[1:]
     if len(arg_list) < 1:
-	print __doc__
-	return
+        print(__doc__)
+        return
 
     while arg_list:
         word = arg_list.pop(0)
         if word in ["-help", "-h"]:
-	    print __doc__
-	    return
+            print(__doc__)
+            return
         elif word == "-n":
             pretend = 1
-            print "Just pretending"
+            print("Just pretending")
         elif word == "-notwiddle":
             remove.twiddle = False
         elif word == "-swp":
@@ -103,29 +103,27 @@ def main():
             directories.append(word)
 
     if not directories:
-        print "No directory specified"
-        print
-        print __doc__
+        print("No directory specified")
+        print()
+        print(__doc__)
         return
 
-    print "Looking for",
-    if remove.twiddle: print "~ files",
-    if remove.swp: print ".swp files",
-    if remove.dep: print ".depend files,",
-    if remove.tag: print "tags files",
-    if remove.pyc: print ".pyc files",
-    print "in %s"%(', '.join(directories))
+    print("Looking for", end=' ')
+    if remove.twiddle: print("~ files", end=' ')
+    if remove.swp: print(".swp files", end= ' ')
+    if remove.dep: print(".depend files,", end= ' ')
+    if remove.tag: print("tags files", end= ' ')
+    if remove.pyc: print(".pyc files", end=' ')
+    print("in %s"%(', '.join(directories)))
 
     for dirname in directories:
-	if os.path.isdir(dirname):
+        if os.path.isdir(dirname):
             process(dirname, remove, pretend, verbose)
-	else:
-	    if os.path.exists(dirname):
-                print "!!! '%s' is not a directory"%dirname
+        else:
+            if os.path.exists(dirname):
+                print("!!! '%s' is not a directory"%dirname)
             else:
-		print "!!! Directory '%s' does not exist"%dirname
+                print("!!! Directory '%s' does not exist"%dirname)
 
 if __name__ == "__main__":
     main()
-
-# vim: set tabstop=8 softtabstop=4 shiftwidth=4 expandtab:

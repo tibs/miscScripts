@@ -1,452 +1,235 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-"""Simple utility to make some attempt at turning HTML into text
+"""Simple utility to convert HTML to text, using pandoc
 
-	usage: html2text [<switches>] htmlfile
-	       html2text [<switches>] -all [directory [directory ...]]
-	       html2text -auto [directory [directory ...]]
+        usage: html2text [<switches>] infile
+               html2text [<switches>] -all [directory [directory ...]]
+               html2text -auto [directory [directory ...]]
 
 Switches:
-   -all      all ".html", ".shtml" and ".htm" files in the named directory or
-             directories (default ".") will be processed.
-   -verbose  each file is named as it is processed.
-   -force    the output file will overwrite any existing file of that name.
-   -delete   the HTML file will be deleted if it is successfully translated.
-   -auto     the same as "-all -verbose -delete".
+   -all          all recognised files in the named directory or directories
+                 (default ".") will be processed.
+   -v, -verbose  report what is done to each file, as it is done.
+   -force        the output file will overwrite any existing file of that name.
+   -delete       the input file will be deleted if it is successfully translated.
+   -auto         the same as "-all -verbose -delete".
    -compress, -gzip, -z   compress the result with gzip
    -recurse,  -r          recurse through directories, implies -all
 
-NB: .doc and .rtf files are also converted, but will not be deleted.
+Recognised files are those with suffixes .html, .htm, .doc, .docx and .rtf.
 """
 
-import sys
 import os
-import string
-import htmllib
-import formatter
+import shutil
+import subprocess
+import sys
 
-
-def deduce_filename(htmlfile):
-    """Deduce a text filename from an HTML filename."""
-
-    #head,tail = os.path.splitext(htmlfile)
-    #
-    #if tail == ".html" or tail == ".htm":
-    #    return head+".txt"
-    #else:
-    #    return htmlfile+".txt"
-    return htmlfile+".txt"
-
-
-class MyHTMLParser(htmllib.HTMLParser):
-
-    def __init__(self, formatter, verbose=0):
-	htmllib.HTMLParser.__init__(self, formatter, verbose)
-
-    def anchor_bgn(self, href, name, type):
-        self.anchor = href
-        if self.anchor:
-	    self.save_bgn()
-
-    def anchor_end(self):
-        if self.anchor:
-	    text = self.save_end()
-	    self.handle_data("%s <%s>"%(text,self.anchor))
-	    self.anchor = None
-
-
-DEBUG = 0
-
-class MyWriter(formatter.NullWriter):
-
-    def __init__(self, file=None, maxcol=72):
-	self.file = file or sys.stdout
-	self.maxcol = maxcol
-	self.margin = 0		# margin
-	self.extra_margin = 0	# extra margin in a list element
-	self.indent = 3		# increment for margin
-	self.extra_indent = 2	# indent for extra margin
-	self.level = {}		# dictionary of levels
-	formatter.NullWriter.__init__(self)
-	self.reset()
-
-    def reset(self):
-	self.col = 0		# current column
-	self.atbreak = 0	# is this a good place to linebreak?
-
-    def new_alignment(self, align):
-	if DEBUG: print "new_alignment(%s)" % `align`
-
-    def new_font(self, font):
-	if DEBUG: print "new_font(%s)" % `font`
-
-    def new_margin(self, margin, level):
-	if DEBUG: print "new_margin(%s, %d)" % (`margin`, level)
-
-	if margin == None:
-	    self.margin = 0
-	elif self.level.has_key(margin):
-	    if level == 1:
-		self.level[margin] = level
-		self.margin = self.margin + self.indent
-	    elif level == 2:
-		self.level[margin] = level
-		self.margin = self.margin - self.indent
-		if self.margin < 0: self.margin = 0
-	else:
-	    self.level[margin] = level
-	    self.margin = self.margin + self.indent
-	if DEBUG: print "   margin =",self.margin
-	self.extra_margin = 0
-	return
+from pathlib import Path
+from tempfile import mkdtemp
 
 
-	if margin == None:
-	    self.margin = 0
-	elif level == 1:
-	    self.margin = self.margin + self.indent
-	elif level == 2:
-	    self.margin = self.margin - self.indent
-	    if self.margin < 0: self.margin = 0
-	else:
-	    print "***Margin %s level %d (not 1 or 2)"%(margin,level)
-	    self.margin = 0
-	if DEBUG: print "   margin =",self.margin
-	self.extra_margin = 0
-	#self.reset()  #???
-	#self.start_margin()
+KNOWN_SUFFIXES = ('.html', '.htm', '.doc', '.docx', '.rtf')
 
-    def new_spacing(self, spacing):
-	if DEBUG: print "new_spacing(%s)" % `spacing`
 
-    def new_styles(self, styles):
-	if DEBUG: print "new_styles(%s)" % `styles`
+def antiword(infile, textfile):
+    """Use antiword to convert the file.
+    """
+    with open(textfile, 'x') as fd:
+        subprocess.run(
+            [
+                'antiword',
+                '-f',                   # formatted text
+                '-w', '72',             # text width
+                infile,
+            ],
+            check=True,
+            stdout=fd,
+        )
 
-    def send_paragraph(self, blankline):
-	if DEBUG: print "send_paragraph(%s)" % `blankline`
-	if blankline > 1:
-	    self.file.write('\n'*(blankline-1))
-	self.reset()
-	self.file.write("\n")
-	##self.start_line()
 
-    def send_line_break(self):
-	if DEBUG: print "send_line_break()"
-	#self.file.write('\n')
-	self.reset()
-	self.file.write("\n")
-	##self.start_line()
+# pandoc
+# -o <output-file>
+# -f <input-file-format>   e.g., html, docx, odt, epub
+# -t <output-file-format>  e.g., markdown, rst, commonmark, plain (plain text)
+# --fail-if-warnings | --verbose | --quiet
+# --wrap=auto|none|preserve  auto is default, should be ok
+# --columns=N  default 72
+# --reference-links  instead of inline links
+# <input-file>
 
-    def send_hor_rule(self, *args, **kw):
-	if DEBUG: print "send_hor_rule(%s,%s)"%(args,kw)
-	self.file.write('\n')
-	self.file.write('-'*self.maxcol)
-	self.file.write('\n')
-	self.reset()
 
-    def start_margin(self):
-	if DEBUG: print "   start_margin()"
-	self.file.write(" "*self.margin + " "*self.extra_margin)
-	self.col = self.col + self.margin
+def iconv(in_file, out_file):
+    """Use iconv to regularise our text encoding.
+    """
+    with open(out_file, 'x') as fd:
+        subprocess.run(
+            [
+                'iconv',
+                '--unicode-subst="?"',
+                '--byte-subst="?"',
+                '-t', 'UTF-8',
+                '-f', 'UTF-8',
+                in_file,
+            ],
+            check=True,
+            stdout=fd,
+        )
 
-    def start_line(self):
-	if DEBUG: print "   start_line()"
-	self.file.write("\n")
-	self.start_margin()
-	#self.file.write("\n" + " "*self.margin + " "*self.extra_margin)
-	#self.col = self.col + self.margin
 
-    def send_label_data(self, data):
-	if DEBUG: print "send_label_data(%s)" % `data`
-	self.extra_margin = 0
-	self.start_line()
-	self.file.write(data+" ")
-	self.extra_margin = self.extra_indent
+def pandoc(in_file, out_file, text_format='rst'):
+    """Use iconv and pandoc to convert the file.
+    """
+    subprocess.run(
+        [
+            'pandoc',
+            '-o', out_file,
+            '-t', text_format,
+            '--fail-if-warnings',
+            '--reference-links',
+            in_file,
+        ],
+        check=True,
+    )
 
-    def send_flowing_data(self, data):
-	if DEBUG: print "send_flowing_data(%s)" % `data`
-	if not data: return
-	atbreak = self.atbreak or data[0] in string.whitespace
-	col = self.col
 
-	if col == 0:
-	    self.start_margin()
+def convert_file(infile, temp_dir, force=0, verbose=0, delete=0, compress=0):
+    """Do the actual work of converting a file.
+    """
+    suffix = infile.suffix
 
-	maxcol = self.maxcol
-	write = self.file.write
-	#self.start_line()
-	for word in string.split(data):
-	    if atbreak:
-		if col + len(word) >= maxcol:
-		    #write('\n')
-		    col = 0
-		    self.start_line()
-		else:
-		    write(' ')
-		    col = col + 1
-	    write(word)
-	    if DEBUG: print "   ",word
-	    col = col + len(word)
-	    atbreak = 1
-	self.col = col
-	self.atbreak = data[-1] in string.whitespace
+    if suffix not in KNOWN_SUFFIXES:
+        if verbose:
+            print(f'.. Ignoring    {infile}')
+        return
 
-    def send_literal_data(self, data):
-	if DEBUG: print "send_literal_data(%s)" % `data`
-	self.file.write(data)
-	i = string.rfind(data, '\n')
-	if i >= 0:
-	    self.col = 0
-	    data = data[i+1:]
-	data = string.expandtabs(data)
-	self.col = self.col + len(data)
-	self.atbreak = 0
+    textfile = infile.with_suffix(suffix + '.txt')
 
-
-def textutil(docfile,textfile,force=0,verbose=0,problems=None,
-             delete=0,compress=0):
-    """Do the conversion."""
+    if textfile.exists() and not force:
+        print(f'Cannot write file {textfile}, it already exists')
+        return
 
-    if os.path.exists(textfile) and not force:
-	print "Can't write %s - it already exists"%textfile
-	return
+    in_format = suffix.lower()[1:]
 
     if verbose:
-	print "%-40s:"%docfile,
+        print(f'-- Converting  {infile}')
 
-    err = os.system("textutil -convert txt -output '%s' '%s'"%(textfile,docfile))
-
-    if compress:
-	if verbose: print "Compressing.. ",
-        if force:
-            os.system("gzip -f '%s'"%textfile)
-        else:
-            os.system("gzip '%s'"%textfile)
-
-    if verbose: print
-
-
-
-def antiword(docfile,textfile,force=0,verbose=0,problems=None,
-             delete=0,compress=0):
-    """Do the conversion."""
-
-    if os.path.exists(textfile) and not force:
-	print "Can't write %s - it already exists"%textfile
-	return
-
-    if verbose:
-	print "%-40s:"%docfile,
-
-    err = os.system("antiword -f '%s' > '%s'"%(docfile,textfile))
-
-    if compress:
-	if verbose: print "Compressing.. ",
-        if force:
-            os.system("gzip -f '%s'"%textfile)
-        else:
-            os.system("gzip '%s'"%textfile)
-
-    if verbose: print
-
-
-
-def convert(htmlfile,textfile,force=0,verbose=0,problems=None,
-            delete=0,compress=0):
-    """Do the conversion."""
-
-    if os.path.exists(textfile) and not force:
-	print "Can't write %s - it already exists"%textfile
-	return
-
-    if verbose:
-	print "%-40s:"%htmlfile,
-
-    ff = open(htmlfile,"r")
-    data = ff.read()
-    ff.close()
-
-    if verbose:
-	print "Writing.. ",
-
-    ww = open(textfile,"w")
-    fmtr = formatter.AbstractFormatter(MyWriter(ww))
-
-    p = MyHTMLParser(fmtr)
-    try:
+    if in_format == 'doc':
+        # If it really is DOC, then antiword is our best bet
         try:
-            p.feed(data)
+            antiword(infile, textfile)
+        except subprocess.CalledProcessError as exc:
+            print(f'ERR {exc}')
+            return
+    else:
+        # Pandoc doesn't cope well with stray characters that aren't sensibly
+        # encoded, so run the file through iconv first
+        temp_file = Path(temp_dir, infile.name)
+        print(f'.. via temporary file {temp_file}')
+        try:
+            iconv(infile, temp_file)
+            pandoc(temp_file, textfile)
+        except subprocess.CalledProcessError as exc:
+            print(f'ERR {exc}')
+            return
         finally:
-            ww.close()
-            p.close()
-        if delete:
-            if verbose:
-                print "Deleting.. ",
-            os.remove(htmlfile)
-    except KeyboardInterrupt:
-        raise KeyboardInterrupt
-    except:
-	if verbose: print
-        print "Exception processing %s - %s: %s"%(textfile,sys.exc_type,
-                                                  sys.exc_value)
-        if problems != None:
-            problems.append(htmlfile)
-        if os.path.exists(textfile):
-            os.remove(textfile)
-
-        print "Trying textutil instead"
-        os.system("textutil -convert txt -output '%s' '%s'"%(textfile,htmlfile))
+            temp_file.unlink()
 
     if compress:
-	if verbose: print "Compressing.. ",
+        if verbose:
+            print(f'   Compressing {textfile}')
         if force:
-            os.system("gzip -f '%s'"%textfile)
+            subprocess.run(['gzip', '-f', textfile], check=True)
         else:
-            os.system("gzip '%s'"%textfile)
+            subprocess.run(['gzip', textfile], check=True)
 
-    if verbose: print
-
-def unquotify(directory,file):
-    if "'" in file:
-        print "Removing single quotes from file %s"%os.path.join(directory,file)
-        newfile = ""
-        # Ick -- don't do it this way!
-        for letter in file:
-            if letter == "'":
-                newfile += "_"
-            else:
-                newfile += letter
-        os.rename(os.path.join(directory,file),
-                  os.path.join(directory,newfile))
-        file = newfile
-    return file
-
-def convert_file(directory,file,force=0,verbose=0,problems=None,delete=0,recurse=0,compress=0):
-
-    name,ext = os.path.splitext(file)
-    ext = string.lower(ext)
-    if ext in (".html", ".shtml", ".htm"):
-        file = unquotify(directory,file)
-        textfile = deduce_filename(file)
-        convert(os.path.join(directory,file),
-                os.path.join(directory,textfile),force=force,
-                verbose=verbose,problems=problems,delete=delete,compress=compress)
-    elif ext == ".doc":
-        file = unquotify(directory,file)
-        textfile = file + ".txt"
-        antiword(os.path.join(directory,file),
-                 os.path.join(directory,textfile),force=force,
-                 verbose=verbose,problems=problems,delete=delete,compress=compress)
-    elif ext == ".rtf":
-        file = unquotify(directory,file)
-        textfile = file + ".txt"
-        textutil(os.path.join(directory,file),
-                 os.path.join(directory,textfile),force=force,
-                 verbose=verbose,problems=problems,delete=delete,compress=compress)
-
-
-def process_dir(directory,force=0,verbose=0,problems=None,delete=0,recurse=0,compress=0):
-    if not verbose: print "Directory",directory
-    files = os.listdir(directory)
-    files.sort()
-    for file in files:
-	path = os.path.join(directory,file)
-	if os.path.isdir(path):
-	    if recurse:
-		process_dir(path,force=force,verbose=verbose,problems=problems,
-				delete=delete,recurse=recurse,compress=compress)
-	else:
-            convert_file(directory,file,
-                         force=force,verbose=verbose,problems=problems,
-                         delete=delete,recurse=recurse,compress=compress)
+    if delete:
+        if verbose:
+            print(f'   Deleting    {textfile}')
+        infile.unlink()
 
 
-
+def process_dir(directory, temp_dir, force=0, verbose=0, delete=0, recurse=0, compress=0):
+    """Process the files in a directory.
+    """
+    if not verbose:
+        print(f'++ Directory {directory}')
+
+    for dirpath, dirnames, filenames in os.walk(directory):
+
+        for filename in filenames:
+            path = Path(dirpath, filename)
+            convert_file(path, temp_dir, force, verbose, delete, compress)
+
+        if recurse:
+            for dirname in dirnames:
+                process_dir(Path(dirpath, dirname), temp_dir, force, verbose, delete, recurse, compress)
+
+
 def main():
     """Do it."""
 
-    all   = 0
-    force = 0
-    debug = 0
-    verbose = 0
-    delete = 0
-    recurse = 0
-    compress = 0
-    args  = []
+    all_files = False
+    force = False
+    verbose = False
+    delete = False
+    recurse = False
+    compress = False
+    infiles  = []
 
-    # What arguments do we have?
+    args  = sys.argv[1:]
 
-    arg_list  = sys.argv[1:]
+    while args:
+        word = args.pop(0)
 
-    while 1:
-	if len(arg_list) == 0:
-	    break
-
-	word = arg_list[0]
-
-	if word == "-help" or word == "-h":
-	    print __doc__
-	    return
-	elif word == "-debug":		# undocumented command
-	    debug = 1
-	elif word == "-force":
-	    force = 1
-        elif word in ("-recurse","-r"):
-	    recurse = 1
-	    all = 1
+        if word == "-help" or word == "-h":
+            print(__doc__)
+            return
+        elif word == "-force":
+            force = True
+        elif word in ("-recurse", "-r"):
+            recurse = True
+            all_files = True
         elif word in ("-compress", "-gzip", "-z"):
-	    compress = 1
-	elif word == "-verbose":
-	    verbose = 1
-	elif word == "-delete":
-	    delete = 1
-	elif word == "-all":
-	    all = 1
-	elif word == "-auto":
-	    all = 1
-	    delete = 1
-	    verbose = 1
-	else:
-	    args.append(word)
+            compress = True
+        elif word in ("-verbose", "-v"):
+            verbose = True
+        elif word == "-delete":
+            delete = True
+        elif word == "-all":
+            all_files = True
+        elif word == "-auto":
+            all_files = True
+            delete = True
+            verbose = True
+        else:
+            infiles.append(word)
 
-	arg_list = arg_list[1:]
-	continue
+    temp_dir = mkdtemp()
 
-    if debug:
-	global DEBUG
-	DEBUG = 1
+    try:
+        if all_files:
+            if not infiles:
+                infiles = ['.']
+            for dirname in infiles:
+                dirpath = Path(dirname)
+                if dirpath.is_dir():
+                    process_dir(dirname, temp_dir,
+                                force=force, verbose=verbose, delete=delete,
+                                recurse=recurse, compress=compress)
+                else:
+                    print(f'!! Ignoring {dirname}, it is not a directory')
+        elif len(infiles) == 1:
+            convert_file(Path(infiles[0]), temp_dir,
+                         force=force, verbose=verbose, delete=delete, compress=compress)
+        elif not len(infiles):
+            print('No filename given to process')
+            print(__doc__)
+        else:
+            print('Too many names given without -all switch')
+            print(__doc__)
+    finally:
+        shutil.rmtree(temp_dir)
 
-    if all:
-        problems=[]
-	if len(args) == 0:
-	    args.append(".")
-	for dir in args:
-	    if not os.path.isdir(dir): continue
-            process_dir(dir,force=force,verbose=verbose,problems=problems,delete=delete,recurse=recurse,
-			    compress=compress)
-        if problems:
-            print "Problems were encountered with:"
-            for name in problems:
-                print "  ",name
-    else:
-	if len(args) == 1:
-            directory,file = os.path.split(args[0])
-            convert_file(directory,file,
-                         force=force,verbose=verbose,problems=problems,
-                         delete=delete,recurse=recurse,compress=compress)
-	else:
-	    print __doc__
-	    return
-
-# If we're run from the shell, run ourselves
 
 if __name__ == "__main__":
     main()
-
-
-# ----------------------------------------------------------------------
-# [X]Emacs local variables declaration - place us into python mode
-# Local Variables:
-# mode:python
-# py-indent-offset:4
-# End:

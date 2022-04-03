@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """friday -- give the date of a week's Friday
 
@@ -19,8 +19,8 @@ Arguments may also be:
 
 Otherwise, the currrent week's Friday will be calculated and reported.
 
-Following amino conventions, Saturday and Sunday are taken to belong to the
-week of the following Friday.
+Following the conventions I needed when this was written, Saturday and
+Sunday are taken to belong to the week of the following Friday.
 """
 
 import sys
@@ -47,7 +47,7 @@ def calc_friday(today=None):
   elif weekday == 5:              # Saturday
     friday = today + datetime.timedelta(6)
   elif weekday == 6:              # Sunday
-    friday = today + datetime.timedelta5
+    friday = today + datetime.timedelta(5)
   else:
     raise ValueError("Unexpected weekday number %d for date %s"%(weekday,today))
   return friday
@@ -85,17 +85,17 @@ def main():
       year,mm,dd = when.split("/")
       friday = calc_friday_from_parts(dd,mm,year)
     elif when in ("-h", "-help", "--help"):
-      print __doc__
+      print(__doc__)
       return
     else:
-      print "Unrecognised argument '%s'"%when
-      print __doc__
+      print("Unrecognised argument '%s'"%when)
+      print(__doc__)
       return
   else:
-    print __doc__
+    print(__doc__)
     return
 
-  print friday
+  print(friday)
 
 if __name__ == "__main__":
     main()

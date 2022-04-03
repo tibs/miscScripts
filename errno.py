@@ -182,7 +182,7 @@ def check_kbus(errname):
 
 def main(args):
     if len(args) == 0:
-        printr(__doc__)
+        print(__doc__)
         return
 
     want_kbus = False

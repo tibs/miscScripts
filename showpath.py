@@ -57,18 +57,18 @@ def environ(item):
         return (item,os.environ[item])
     else:
         other = []
-        up = string.upper(item)
+        up = item.upper()
         if up != item: other.append(up)
-        down = string.lower(item)
+        down = item.lower()
         if down != item: other.append(down)
-        cap = string.upper(item[0]) + string.lower(item[1:])
+        cap = item.capitalize()
         if cap != item: other.append(cap)
 
         for name in other:
             if name in os.environ:
                 return (name,os.environ[name])
 
-        raise KeyError("There is no environment variable %s (also tried %s)" % (item,string.join(other,", ")))
+        raise KeyError("There is no environment variable %s (also tried %s)" % (item,", ".join(other)))
 
 
 
@@ -146,12 +146,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# ----------------------------------------------------------------------
-# [X]Emacs local variables declaration - place us into python mode
-# Local Variables:
-# mode:python
-# py-indent-offset:4
-# End:
-# vim: set tabstop=8 softtabstop=4 shiftwidth=4 expandtab:

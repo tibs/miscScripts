@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """editpath -- return an altered version of the PATH
 
@@ -26,9 +26,6 @@ For the moment, only works on $PATH -- if necessary, add switches (as in
 
 import sys
 import os
-import string
-import stat
-import re
 
 if os.name == "posix":
     PATH_DELIM = ":"
@@ -42,17 +39,17 @@ def main():
     pathname = "PATH"
 
     if len(args) < 2:
-        print __doc__
+        print(__doc__)
         return
 
     if args[0] in ("-h", "-help", "--help"):
-        print __doc__
+        print(__doc__)
         return
 
     operations = args[:-1]
     element = args[-1]
 
-    pathlist = string.split(os.environ[pathname],PATH_DELIM)
+    pathlist = os.environ[pathname].split(PATH_DELIM)
 
     for operation in operations:
         if operation == "append":
@@ -74,10 +71,10 @@ def main():
             # This is a bit awkward - should we ignore things we don't recognise
             # (and thus give an incorrect/unexpected result), or grumble (and thus
             # return a string that is not a valid path).
-            print "*** Unexpected operation '%s'"%operation
+            print("*** Unexpected operation '%s'"%operation)
             return
 
-    print string.join(pathlist,PATH_DELIM)
+    print(PATH_DELIM.join(pathlist))
 
 
 # ------------------------------------------------------------
@@ -85,12 +82,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# ----------------------------------------------------------------------
-# vim: set filetype=python expandtab tabstop=4 shiftwidth=4:
-# [X]Emacs local variables declaration - place us into python mode
-# Local Variables:
-# mode:python
-# py-indent-offset:4
-# End:

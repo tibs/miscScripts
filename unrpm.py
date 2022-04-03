@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """Extract the contents of an RPM.
 
@@ -18,11 +18,11 @@ import subprocess
 
 def main(args):
     if len(args) != 1 or args[0] in ('-h', '-help', '--help'):
-        print __doc__
+        print(__doc__)
         return
 
     filepath = os.path.abspath(args[0])
-    print filepath
+    print(filepath)
     base, ext = os.path.splitext(filepath)
 
     os.mkdir(base)

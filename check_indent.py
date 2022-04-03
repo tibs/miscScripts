@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Report on indentation policies in a file
 
@@ -7,10 +7,8 @@ Usage: check_indent.py file [file ...]
 
 import sys
 import os
-import string
 
 def check(ff,name):
-    #print "Processing",name
     noindent   = 0
     justspaces = 0
     justtabs   = 0
@@ -30,12 +28,12 @@ def check(ff,name):
             justspaces += 1
         othertabs = "\t" in restofline.rstrip()
     return (name,noindent,justspaces,justtabs,mixed,othertabs)
-    
+
 def main(args):
     """Do it."""
 
     if len(args) == 0:
-        print __doc__
+        print(__doc__)
 
     results = []
     maxlen = 0
@@ -48,14 +46,14 @@ def main(args):
                 ff.close()
             if len(name) > maxlen:
                 maxlen = len(name)
-        except IOError, detail:
-            print "Error processing '%s': %s"%(name,detail)
-    print "%*s    total   .......... lines with ...........    other"%(maxlen," ")
-    print "%*s    lines   spaces     tabs     both  neither     tabs"%(maxlen," ")
+        except IOError as detail:
+            print("Error processing '%s': %s"%(name,detail))
+    print("%*s    total   .......... lines with ...........    other"%(maxlen," "))
+    print("%*s    lines   spaces     tabs     both  neither     tabs"%(maxlen," "))
     for name,noindent,justspaces,justtabs,mixed,othertabs in results:
         total = noindent + justspaces + justtabs + mixed
-        print "%-*s %8d %8d %8d %8d %8d %8d"%(maxlen,name,total,justspaces,
-                justtabs,mixed,noindent,othertabs)
+        print("%-*s %8d %8d %8d %8d %8d %8d"%(maxlen,name,total,justspaces,
+                justtabs,mixed,noindent,othertabs))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

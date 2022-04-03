@@ -58,12 +58,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# ----------------------------------------------------------------------
-# vim: set filetype=python expandtab tabstop=4 shiftwidth=4:
-# [X]Emacs local variables declaration - place us into python mode
-# Local Variables:
-# mode:python
-# py-indent-offset:4
-# End:
