@@ -167,5 +167,3 @@ def main(args):
 if __name__ == '__main__':
     args = sys.argv[1:]
     main(args)
-
-# vim: set tabstop=8 softtabstop=4 shiftwidth=4 expandtab:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """tidypath -- remove duplicate elements from the PATH
 
@@ -15,8 +15,6 @@ For the moment, only works on $PATH -- if necessary, add switches (as in
 
 import sys
 import os
-import string
-import sets
 
 if os.name == "nt":
     PATH_DELIM = ";"
@@ -24,11 +22,11 @@ else:
     PATH_DELIM = ":"
 
 def get_path(pathname):
-    return string.split(os.environ[pathname],PATH_DELIM)
+    return os.environ[pathname].split(PATH_DELIM)
 
 def tidy_path(pathname):
     orig_path = get_path(pathname)
-    elements = sets.Set()
+    elements = set()
     path = []
 
     for item in orig_path:
@@ -36,7 +34,7 @@ def tidy_path(pathname):
             path.append(item)
             elements.add(item)
 
-    return string.join(path,PATH_DELIM)
+    return PATH_DELIM.join(path)
 
 
 # ------------------------------------------------------------
@@ -48,9 +46,9 @@ def main():
     pathname = "PATH"
 
     if arg_list:
-        print __doc__
+        print(__doc__)
     else:
-        print tidy_path(pathname)
+        print(tidy_path(pathname))
 
 
 # ------------------------------------------------------------
