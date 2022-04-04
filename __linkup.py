@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """Make links to these programs from ${HOME}/bin
 
@@ -14,7 +14,7 @@ def linkup():
 
     bindir = os.path.join(home, "bin")
     if not os.path.exists(bindir):
-        print 'Creating', bindir
+        print('Creating', bindir)
         os.mkdir(bindir)
 
     this_dir, this_file = os.path.split(__file__)
@@ -24,17 +24,17 @@ def linkup():
     files.sort()
     for name in files:
         if name in (this_file, 'readme.rst'):
-            print 'Ignoring', name
+            print('Ignoring', name)
             continue
 
         if name[-1] in ('~', '#'):
-            print 'Ignoring', name
+            print('Ignoring', name)
             continue
 
         base, ext = os.path.splitext(name)
 
         if ext in ('.swp', '.swo'):
-            print 'Ignoring', name
+            print('Ignoring', name)
             continue
 
         if ext == ".py":
@@ -46,17 +46,17 @@ def linkup():
         that = os.path.join(bindir, usename)
 
         if os.path.isdir(this):
-            print 'Ignoring directory', name
+            print('Ignoring directory', name)
             continue
 
         try:
             os.symlink(this, that)
-            print 'Linked %s to %s'%(that, this)
+            print('Linked %s to %s'%(that, this))
         except OSError as e:
             if e.errno == 17:
-                print 'Entry already exists for',usename
+                print('Entry already exists for',usename)
             else:
-                print e, base
+                print(e, base)
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -64,6 +64,4 @@ if __name__ == '__main__':
     if len(args) == 0:
         linkup()
     else:
-        print __doc__
-
-# vim: set tabstop=8 softtabstop=4 shiftwidth=4 expandtab:
+        print(__doc__)
