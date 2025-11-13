@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-"""Usage: tree.py [-f[old] <dir>] [-a[scii]] [<directory>]
+"""Usage: tree.py [-f[old] <dir>] [-fd] [-a[scii]] [<directory>]
 
 Directories named by '-fold' ('-f') will not have their content shown
 You may nominate multiple "folded" directories, but each needs to be
@@ -8,7 +8,7 @@ preceded by the switch. For instance::
 
     tree.py -f .git -f .weld fromble
 
-(but actually .git directories are currently always folded - this is a hack)
+The hacky -fd means "fold all directories starting with a `.`".
 
 If you specify '-ascii' ('-a') then "normal" characters will be used to show
 the tree structure, instead of IBM437 characters (this is similar to the "real"
@@ -16,7 +16,8 @@ tree's '--charset=ASCII')
 
 If you specify -d then only directories will be shown.
 
-__pycache__ directories are not shown (this is a hack)
+__pycache__ directories are not shown at all (this is a hack and I may
+end up regretting it)
 """
 
 # TODO: ignore __pycache__ directories by default
@@ -37,6 +38,8 @@ import stat
 INDENT = '    '
 
 DEFAULT_IGNORE = ['__pycache__']
+
+IGNORE_DOT_DIRECTORIES = False
 
 
 def filestr(path, filename, fold_dirs=None):
@@ -77,7 +80,13 @@ def filestr(path, filename, fold_dirs=None):
     return '%s%s' % (filename, ''.join(flags))
 
 
-def tree(dirpath, padding='', fold_dirs=None, just_ascii=False, only_dirs=False):
+def tree(
+    dirpath,
+    padding='',
+    fold_dirs=None,
+    just_ascii=False,
+    only_dirs=False,
+    ignore_dot_directories=False):
 
     if just_ascii:
         if True:            # Follow how Unix 'tree' does it
@@ -111,6 +120,9 @@ def tree(dirpath, padding='', fold_dirs=None, just_ascii=False, only_dirs=False)
                 new_padding = padding + T
             print(new_padding + filestr(path, name, fold_dirs))
 
+            if ignore_dot_directories and name.startswith('.'):
+                continue
+
             if fold_dirs and name in fold_dirs:
                 continue
 
@@ -135,6 +147,7 @@ def main(args):
     just_ascii = False
     fold_dirs = []
     only_dirs = False
+    ignore_dot_directories = False
 
     while args:
         word = args.pop(0)
@@ -147,6 +160,8 @@ def main(args):
             just_ascii = True
         elif word == '-d':
             only_dirs = True
+        elif word == '-fd':    # yes, this is horrible
+            ignore_dot_directories = True
         elif where is None:
             where = word
         else:
@@ -161,7 +176,8 @@ def main(args):
 
     path = os.path.abspath(where)
     print(filestr(path, os.path.basename(path)))
-    tree(path, fold_dirs=fold_dirs, just_ascii=just_ascii, only_dirs=only_dirs)
+    tree(path, fold_dirs=fold_dirs, just_ascii=just_ascii, only_dirs=only_dirs,
+         ignore_dot_directories=ignore_dot_directories)
 
 
 if __name__ == '__main__':
